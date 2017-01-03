@@ -179,8 +179,24 @@ cdefJS("]", () => {
         arr.push(val)
     }
 })
-
 runProg(`: []::             dup rest swap top ;`)
+
+// loops
+runProg(`
+: pair      ( l r ) swap [] swap <] swap <] ;
+: l         rest top ;
+: r         top ;
+: unpair    dup l swap r ;
+: range++   unpair swap 1 + swap pair ;
+: range?    unpair < ;
+: ipair     r> r> r@ -rot >r >r ;
+: i         ipair l ;
+: i++       r> r> rdrop r> range++ r> tuck >r >r >r >r >r ;
+: do        r@ swap >r >r ;
+: done      r> r> r> rdrop rdrop >r >r >r ;
+: loop      ipair range?  [ i++ ] [ done ] cond ;
+`)
+
 
 // state
 const state =   {}
