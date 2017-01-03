@@ -3,6 +3,7 @@ class EmptyStack extends Error { }
 class UndefinedWord extends Error { }
 class UnbalancedComment extends Error { }
 class UnbalancedDefinition extends Error { }
+class VarInUse extends Error { }
 
 // data stack
 const data =            []
@@ -63,9 +64,9 @@ function pnum (w)       { const n = Number(w); if (Number.isFinite(n)) { push(n)
 function pcomp (w)      { const i = clookup(w); if (i > -1) { ccall(i); return true } }
 function pword (w, f)   { const i = lookup(w); if (i > -1) { f(i); return true } }
 function parse (w) {
-    if (pspace(w) || pstr(w) || pnum(w)) { return }
     if (compileMode && (pcomp(w) || pword(w, (i) => { push(() => call(i))}))) { return }
     if (pword(w, (i) => { call(i) })) { return }
+    if (pspace(w) || pstr(w) || pnum(w)) { return }
     throw new UndefinedWord(`"${w}"`)
 }
 function runProg (str)  { read(str); for (const w of words()) { parse(w) } }
@@ -82,10 +83,16 @@ cdefJS(";",() => {
     throw new UnbalancedDefinition()
 })
 // comments
+defJS("(",() => {
+    for (const w of words()) { if (w === ")") { return } }
+    throw new UnbalancedComment()
+})
+
 cdefJS("(",() => {
     for (const w of words()) { if (w === ")") { return } }
     throw new UnbalancedComment()
 })
+
 
 // stack effects
 defJS("drop",() =>          { pop() })
@@ -164,9 +171,10 @@ runProg(`: cr               " " log ;`)
 
 // arrays
 defJS("[]", () =>           { push([]) })
-defJS("<]", (arr, val) =>   { push(arr.concat([val])) }) // example: [] 1 <] 2 <] 3 <]
+defJS("push", (arr, val) => { push(arr.concat([val])) })
 defJS("top", (arr) =>       { push(arr[arr.length - 1]) })
 defJS("rest", (arr) =>      { push(arr.slice(0, arr.length - 1)) })
+defJS("concat", (a, b) =>   { push(a.concat(b)) })
 
 function doneIntr (def) { interpret(); push(def.reverse()) }
 defJS("[", () =>        { push(doneIntr); compile() })
@@ -179,11 +187,16 @@ cdefJS("]", () => {
         arr.push(val)
     }
 })
-runProg(`: []::             dup rest swap top ;`)
+runProg(`
+: cons              swap push ;
+: split             dup rest swap top ;`)
+defJS("ins", (dst, src) => {
+    push(dst.reduce((coll, item) => coll.concat([item], src), []))
+})
 
 // loops
 runProg(`
-: pair      ( l r ) swap [] swap <] swap <] ;
+: pair      ( l r ) swap [] cons cons ;
 : l         rest top ;
 : r         top ;
 : unpair    dup l swap r ;
@@ -197,16 +210,18 @@ runProg(`
 : loop      ipair range?  [ i++ ] [ done ] cond ;
 `)
 
-
 // state
 const state =   {}
-defJS("var:", (x) =>        { state[word()] = x })  // `0 var: count`
+function setv (x, id)       { state[id] = x }
+function idfree (id)        { if (id in state) { throw new VarInUse() } }
+function initv (n, id)      { idfree(id); defJS(n, () => { push(id)}) }
+defJS("var:", (x) =>        { const n = word(); const id = Symbol(n); initv(n, id); setv(x, id) })
 defJS("@", (id) =>          { push(state[id]) })    // state @ "foo" . "bar" .
-defJS("!", (x, id) =>       { state[id] = x })
+defJS("!", setv)
 
 // io
 const rl =  require("readline")
-const io =  rl.createInterface({ input: process.stdin, output: process.stdout })
+const io =  rl.createInterface({ input: process.stdin, output: process.stdout, terminal: true })
 
 try {
     console.log("Welcome to jForth! Control-C to exit.")
