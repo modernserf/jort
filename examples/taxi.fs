@@ -24,9 +24,8 @@
                     ] swap . exec ;
 
 ( parsing )
-: tokens            ", " split ;
 : turn              [ "l" ] re match? [ left ] [ right ] cond turn ;
-: >num              [ \d r+ ] re matches top Number ;
+: >num              [ _d r+ ] re matches top Number ;
 : pdistance         ( dir tok ) >num vec move! ;
 : parse!            ( tok dir ) over turn dup rot pdistance ( dir ) ;
 
