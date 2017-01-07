@@ -14,7 +14,7 @@ module.exports = function Jort () {
     function enter (i,m,n)  { ret.push(ptr); ptr = { i, mem: m, name: n }; next() }
     function _enter (i,m,n) { return () => enter(i, m, n) }
     function exit ()        { const r = ret.pop(); if (r) { ptr = r; next() }  }
-    function rdrop ()       { ret.pop() /* let r; do { r = ret.pop() } while (r.mem !== mem) */ }
+    function rdrop ()       { ret.pop() /*let r; do { r = ret.pop() } while (r.mem !== mem) */ }
 
     function next ()        { incp(); _fn = wrap(getp()) }
     function stackdo (s)    { enter(-1, s.concat(exit), "<substack>") }
@@ -32,7 +32,7 @@ module.exports = function Jort () {
     // parser
     function read (str) {
         // TODO: remove comments, match & escape quoted strings
-        return str.trim().split(/\s+/g)
+        return str.trim().split(/\s+/g).filter((x) => x)
     }
     function word (str) {
         const f = lookup(str); if (f) { return f }
@@ -52,6 +52,8 @@ module.exports = function Jort () {
     // interpreter
     const imm = {}          // immediate word dictionary
     function runimm (str)   { if(compileMode() && imm[str]) { imm[str](); return true } }
+    function idef (f, n)    { imm[n] = () => ctop().push(...f) }
+
     function run (f)        { _fn = f; do { _fn() } while (ret.length) }
     function interpret (str) {
         const tokens = read(str)
@@ -76,6 +78,7 @@ module.exports = function Jort () {
         rdrop: () =>    { rdrop(); next() },
         exit: () =>     { ret.pop(); exit() },
         ";": () =>      { define(pop(), pop()); next() },
+        ";inline":() => { idef(pop(), pop()); next() },
         hide: () =>     { hide(pop()); next() },
         lookup: () =>   { pu(lookup(pop())); next() },
         // substacks
@@ -84,6 +87,7 @@ module.exports = function Jort () {
         pop: () =>      { pu(pop().pop()); next() },
         rest: () =>     { const s = pop(); pu(s.slice(0, s.length - 1)); next() },
         concat: () =>   { const x = pop(); pu(pop().concat(x)); next()  },
+        count: () =>    { pu(pop().length); next() },
         // TODO: does this allow nesting?
         do: () =>       { stackdo(pop()) },
         // stack manipulation
@@ -100,6 +104,7 @@ module.exports = function Jort () {
         // logic
         "===": () =>    { pu(pop() === pop()); next() },
         "<": () =>      { const a = pop(); pu(pop() < a); next() },
+        ">": () =>      { const a = pop(); pu(pop() > a); next() },
         and: () =>      { const a = pop(); pu(pop() && a); next() },
         or: () =>       { const a = pop(); pu(pop() || a); next() },
         not: () =>      { pu(!pop()); next() },
@@ -108,7 +113,7 @@ module.exports = function Jort () {
         log: () =>      { console.log(pop()); next() },
         ".s": () =>     { console.log(stack); next() },
         ".r": () =>     {
-            console.log(ret.map((r) => r.name ))
+            console.log(ret.map((r) => r.name).reverse())
             next()
         },
         dump: () =>     { console.log(dump()); next() },
@@ -133,13 +138,14 @@ module.exports = function Jort () {
     "tuck"  [ dup rot rot ] ;
     "2dup"  [ over over ] ;
     "[]"    [ [ ] ] ;
-    "cond"  [ ? do ] ;
-    "if"    [ [] ? do ] ;
+    "split" [ dup rest swap pop ] ;
+    "cond"  [ ? do ] ;inline
+    "if"    [ [] ? do ] ;inline
+    "unless" [ [] swap ? do ] ;inline
     "="     [ === ] ;
     "!="    [ = not ] ;
     "mod"   [ tuck tuck rem swap + swap rem ] ;
-    "<="    [ 2dup < -rot = or ] ;
-    ">"     [ <= not ] ;
+    "<="    [ > not ] ;
     ">="    [ < not ] ;
     `)
 
