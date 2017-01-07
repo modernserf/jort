@@ -3,9 +3,46 @@
 
 # core
 
+```
+/* inline comments */
+\ comments
+"string literals"
+-123.45
+```
+
+## definitions
+
+```
+"double"    [ 2 * ] ;
+"quadruple" [ double double ] ;
+```
+
+## conditionals
+
+```
+2 % 0 = [ "even" ] [ "odd" ] cond log
+```
+
+## local variables
+
+```
+"foo"       [ ( a b c ) a b + c b + c a ]       
+```
+
+
+## pattern matching
+
+```
+[   [ 15 divby  =>  "FizzBuzz" log ] match
+    [ 5 divby   =>  "Buzz" log ] match
+    [ 3 divby   =>  "Fizz" log ] match
+    log ]
+```
+
+
 ## stack manipulation
 word | effect
----- | ------
+---  | ---
 drop | a -- ()
 swap | a b -- b a
 dup  | a -- a a

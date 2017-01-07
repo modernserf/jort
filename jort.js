@@ -76,7 +76,7 @@ module.exports = function Jort () {
 
     Object.assign(base, {
         rdrop: () =>    { rdrop(); next() },
-        exit: () =>     { ret.pop(); exit() },
+        return: () =>   { ret.pop(); exit() },
         ";": () =>      { define(pop(), pop()); next() },
         ";inline":() => { idef(pop(), pop()); next() },
         hide: () =>     { hide(pop()); next() },
@@ -88,7 +88,6 @@ module.exports = function Jort () {
         rest: () =>     { const s = pop(); pu(s.slice(0, s.length - 1)); next() },
         concat: () =>   { const x = pop(); pu(pop().concat(x)); next()  },
         count: () =>    { pu(pop().length); next() },
-        // TODO: does this allow nesting?
         do: () =>       { stackdo(pop()) },
         // stack manipulation
         dup: () =>      { const x = pop(); pu(x); pu(x); next() },
@@ -103,11 +102,14 @@ module.exports = function Jort () {
         rem: () =>      { const a = pop(); pu(pop() % a); next() },
         // logic
         "===": () =>    { pu(pop() === pop()); next() },
+        "=": () =>      { pu(eq(pop(), pop())); next() },
         "<": () =>      { const a = pop(); pu(pop() < a); next() },
         ">": () =>      { const a = pop(); pu(pop() > a); next() },
         and: () =>      { const a = pop(); pu(pop() && a); next() },
         or: () =>       { const a = pop(); pu(pop() || a); next() },
         not: () =>      { pu(!pop()); next() },
+        true: () =>     { pu(true); next() },
+        false: () =>    { pu(false); next() },
         "?": () =>      { const _else = pop(), _then = pop(); pu(pop() ? _then : _else); next() },
         // logging/debugging
         log: () =>      { console.log(pop()); next() },
@@ -118,7 +120,7 @@ module.exports = function Jort () {
         },
         dump: () =>     { console.log(dump()); next() },
         // TODO: define lower level primitives
-        ins: () => {
+        in: () => {
             const f = pop(), s = pop(), d = []
             s.forEach((x) => d.push(x, f, base.do))
             pu(d); next()
@@ -132,21 +134,23 @@ module.exports = function Jort () {
 
     // TODO: value equality for stacks
     interpret(`
-    "-rot"  [ rot rot ] ;
-    "over"  [ swap dup rot rot ] ;
-    "nip"   [ swap drop ] ;
-    "tuck"  [ dup rot rot ] ;
-    "2dup"  [ over over ] ;
-    "[]"    [ [ ] ] ;
-    "split" [ dup rest swap pop ] ;
-    "cond"  [ ? do ] ;inline
-    "if"    [ [] ? do ] ;inline
-    "unless" [ [] swap ? do ] ;inline
-    "="     [ === ] ;
-    "!="    [ = not ] ;
-    "mod"   [ tuck tuck rem swap + swap rem ] ;
-    "<="    [ > not ] ;
-    ">="    [ < not ] ;
+    "-rot"      [ rot rot ] ;
+    "over"      [ swap dup rot rot ] ;
+    "nip"       [ swap drop ] ;
+    "tuck"      [ dup rot rot ] ;
+    "2dup"      [ over over ] ;
+    "[]"        [ [ ] ] ;
+    "split"     [ dup rest swap pop ] ;
+    "cond"      [ ? do ] ;inline
+    "if"        [ [] ? do ] ;inline
+    "unless"    [ [] swap ? do ] ;inline
+    "!=="       [ === not ] ;
+    "!="        [ = not ] ;
+    "mod"       [ tuck tuck rem swap + swap rem ] ;
+    "<="        [ > not ] ;
+    ">="        [ < not ] ;
+    "=>"        [ [ return ] unless ] ;inline
+    "match"     [ [ dup ] swap concat [ drop return ] concat do ] ;inline
     `)
 
     return { stack, interpret, dump }
@@ -156,6 +160,19 @@ function maybeFunc (f)  { return typeof f === "function" && f  }
 function isQuoted (str) { return str[0] === `"` && str[str.length - 1] === `"` }
 function unquote (str)  { return str.substr(1, str.length - 2) }
 function isNumber (n)   { return Number.isFinite(n) }
+
+// deep equality
+function eq (a, b) {
+    if (a === b) { return true }
+    if (Array.isArray(a) && Array.isArray(b)) {
+        if (a.length !== b.length) { return false }
+        for (var i = 0; i < a.length; i++) {
+            if (!eq(a[i], b[i])) { return false }
+        }
+        return true
+    }
+    return false
+}
 
 class EmptyStack extends Error {
     constructor () {
