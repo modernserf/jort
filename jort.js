@@ -10,14 +10,16 @@ module.exports = function Jort () {
     let _fn = null          // holder for function (for TCO)
 
     const ret = []          // return stack
-    let ptr = { i: 0, mem, name: "root" } // instruction pointer
+    function rpush (val)    { ret.push(val) }
+    function rpop ()        { return ret.pop() }
+
+    let ptr = { i: 0, mem } // instruction pointer
     function incp ()        { ptr = { i: ptr.i + 1, mem: ptr.mem, name: ptr.name } }
     function getp ()        { return ptr.mem[ptr.i] }
 
-    function enter (i,m,n)  { ret.push(ptr); ptr = { i, mem: m, name: n }; next() }
+    function enter (i,m,n)  { rpush(ptr); ptr = { i, mem: m, name: n }; next() }
     function _enter (i,m,n) { return () => enter(i, m, n) }
-    function exit ()        { const r = ret.pop(); if (r) { ptr = r; next() }  }
-    function rdrop ()       { ret.pop() /*let r; do { r = ret.pop() } while (r.mem !== mem) */ }
+    function exit ()        { const r = rpop(); if (r) { ptr = r; next() }  }
 
     function next ()        { incp(); _fn = wrap(getp()) }
     function stackdo (s)    { enter(-1, s.concat(exit), "<substack>") }
@@ -52,11 +54,12 @@ module.exports = function Jort () {
     function decomp ()      { (cstack.length > 1 ? cpush : pu)(cstack.pop()) }
     function compileMode () { return cstack.length }
 
-    // interpreter
+    // immediate words
     const imm = {}          // immediate word dictionary
     function runimm (str)   { if(compileMode() && imm[str]) { imm[str](); return true } }
     function idef (f, n)    { imm[n] = () => ctop().push(...f) }
 
+    // interpreter
     function run (f)        { _fn = f; do { _fn() } while (ret.length) }
     function interpret (str) {
         const tokens = read(str)
@@ -78,20 +81,30 @@ module.exports = function Jort () {
     })
 
     Object.assign(base, {
-        rdrop: () =>    { rdrop(); next() },
+        // return
+        rpush: () =>    { rpush(pop()); next() },
+        rpop: () =>     { pu(rpop()); next() },
+        rdrop: () =>    { rpop(); next() },
         return: () =>   { ret.pop(); exit() },
+        // dictionary
         ";": () =>      { define(pop(), pop()); next() },
         ";inline":() => { idef(pop(), pop()); next() },
         hide: () =>     { hide(pop()); next() },
         lookup: () =>   { pu(lookup(pop())); next() },
         // substacks
         "[": () =>      { comp(); next() },
-        push: () =>     { const x = pop(); pu(pop().push(x)); next() },
-        pop: () =>      { pu(pop().pop()); next() },
+        push: () =>     { const x = pop(); pu(pop().concat([x])); next() },
+        pop: () =>      { const s = pop(); pu(s[s.length - 1]); next() },
         rest: () =>     { const s = pop(); pu(s.slice(0, s.length - 1)); next() },
         concat: () =>   { const x = pop(); pu(pop().concat(x)); next()  },
         count: () =>    { pu(pop().length); next() },
         do: () =>       { stackdo(pop()) },
+        loop: () =>     { const s = pop().slice(0); s.push(() => stackdo(s)); stackdo(s) },
+        in: () => {
+            const f = pop(), s = pop(), d = []
+            s.forEach((x) => d.push(x, f, base.do))
+            pu(d); next()
+        },
         // stack manipulation
         dup: () =>      { const x = pop(); pu(x); pu(x); next() },
         drop: () =>     { pop(); next() },
@@ -117,25 +130,10 @@ module.exports = function Jort () {
         // logging/debugging
         log: () =>      { console.log(pop()); next() },
         ".s": () =>     { console.log(stack); next() },
-        ".r": () =>     {
-            console.log(ret.map((r) => r.name).reverse())
-            next()
-        },
+        ".r": () =>     { console.log(ret.map((r) => r.name).reverse()); next() },
         dump: () =>     { console.log(dump()); next() },
-        // TODO: define lower level primitives
-        in: () => {
-            const f = pop(), s = pop(), d = []
-            s.forEach((x) => d.push(x, f, base.do))
-            pu(d); next()
-        },
-        range: () => {
-            const x = pop(), n = pop(), d = []
-            for (var i = n; i <= x; i++) { d.push(i) }
-            pu(d); next()
-        }
     })
 
-    // TODO: value equality for stacks
     interpret(stdlib)
 
     return { stack, interpret, dump }

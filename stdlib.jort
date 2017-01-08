@@ -17,3 +17,8 @@
 "(match)"   [ [ dup ] swap concat [ return ] concat do ] ;inline
 "match"     [ [ (match) ] in do drop ] ;inline
 "(match)" hide
+
+"(next?)"   [ 2dup <= ] ;
+"(add)"     [ -rot tuck push -rot 1 + swap ] ;
+"range"     [ [] -rot [ (next?) => (add) ] loop drop drop ] ;
+"(next?)" hide "(add)" hide

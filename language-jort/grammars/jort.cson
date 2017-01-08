@@ -56,7 +56,7 @@
         'patterns': [
             {
                 'comment': ''
-                'match': '(?<=^|\\s)(?i:(;|;inline))(?=\\s)'
+                'match': '(?<=^|\\s)(?i:(;|;inline|hide))(?=\\s)'
                 'name': 'storage.type.jort'
             }
         ]
@@ -88,6 +88,10 @@
             {
                 'match': '(?<=^|\\s)(?i:(return|rdrop|rpush|rpop))(?=\\s)'
                 'name': 'keyword.returns.jort'
+            }
+            {
+                'match': '(?<=^|\\s)(?i:(do|loop))(?=\\s)'
+                'name': 'keyword.control.jort'
             }
             {
                 'match': '(?<=^|\\s)(?i:(match|=>))(?=\\s)'
