@@ -1,0 +1,9 @@
+"divby"     [ mod 0 = ] ;
+"fizzbuzz"  [ [ [ 15 divby  => "FizzBuzz" log ]
+                [ 3 divby   => "Fizz" log ]
+                [ 5 divby   => "Buzz" log ]
+                [ true      => log ]
+            ] match ] ;
+"run"       [ 1 100 range [ fizzbuzz ] in do ] ;
+
+run

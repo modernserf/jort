@@ -1,0 +1,105 @@
+'fileTypes': [
+    'jort'
+]
+'foldingStartMarker': '/\\*\\*|\\{\\s*$'
+'foldingStopMarker': '\\*\\*/|^\\s*\\}'
+'name': 'Jort'
+'patterns': [
+    {
+        'include': '#constant'
+    }
+    {
+        'include': '#comment'
+    }
+    {
+        'include': '#string'
+    }
+    {
+        'include': '#word'
+    }
+    {
+        'include': '#variable'
+    }
+    {
+        'include': '#storage'
+    }
+]
+'repository':
+    'comment':
+        'patterns': [
+            {
+                'contentName': 'comment.line.jort'
+                'match': '(?<=^|\\s)(\\\\)([\\s\\S]*$)'
+                'captures': {
+                    "1": { 'name': 'comment.line.punctuation.jort' }
+                    "2": { 'name': 'comment.line.jort' }
+                }
+            }
+            {
+                'contentName': 'comment.block.jort'
+                'match': '(?<=^|\\s)(\\.?\\( )([^)]*)(\\))'
+                'captures': {
+                    '1': { 'name': 'comment.block.punctuation.jort' },
+                    '2': { 'name': 'comment.block.jort' }
+                    '3': { 'name': 'comment.block.punctuation.jort' },
+                }
+            }
+        ]
+    'constant':
+        'patterns': [
+            {
+                'match': '(?<=^|\\s)([$#%]?[-+]?[0-9]+(\\.[0-9]*e(-?[0-9]+)|\\.?[0-9a-fA-F]*))(?=\\s)'
+                'name': 'constant.numeric.jort'
+            }
+        ]
+    'storage':
+        'patterns': [
+            {
+                'comment': ''
+                'match': '(?<=^|\\s)(?i:(;|;inline))(?=\\s)'
+                'name': 'storage.type.jort'
+            }
+        ]
+    'string':
+        'patterns': [
+            {
+                "contentName": "string.quoted.double.jort"
+                "begin": "\\s*+((\"))"
+                "end": "\\s*+(?:((\"))|(\n))"
+                "beginCaptures": {
+                    "1": { "name": "string.quoted.double.jort" }
+                    "2": { "name": "punctuation.definition.string.begin.jort" }
+                },
+                "endCaptures": {
+                    "1": { "name": "string.quoted.double.jort" }
+                    "2": { "name": "punctuation.definition.string.end.jort" }
+                }
+            }
+        ]
+    'variable':
+        'patterns': [
+            {
+                'match': '\\b(?i:I|J)\\b'
+                'name': 'variable.language.jort'
+            }
+        ]
+    'word':
+        'patterns': [
+            {
+                'match': '(?<=^|\\s)(?i:(return|rdrop|rpush|rpop))(?=\\s)'
+                'name': 'keyword.returns.jort'
+            }
+            {
+                'match': '(?<=^|\\s)(?i:(match|=>))(?=\\s)'
+                'name': 'keyword.patternmatch.jort'
+            }
+            {
+                'match': '(?<=^|\\s)(?i:(\\[|\\]))(?=\\s)'
+                'name': 'keyword.bracket.jort'
+            }
+            {
+                'match': '(?<=^|\\s)(?i:(~~|BREAK:|BREAK"|DBG))(?=\\s)'
+                'name': 'keyword.other.warning.jort'
+            }
+        ]
+'scopeName': 'source.jort'

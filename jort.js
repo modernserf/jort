@@ -1,3 +1,6 @@
+const fs = require("fs")
+const stdlib = fs.readFileSync("./stdlib.jort","utf8")
+
 module.exports = function Jort () {
     const stack = []        // data stack
     function pu (x)         { stack.push(x) }
@@ -133,25 +136,7 @@ module.exports = function Jort () {
     })
 
     // TODO: value equality for stacks
-    interpret(`
-    "-rot"      [ rot rot ] ;
-    "over"      [ swap dup rot rot ] ;
-    "nip"       [ swap drop ] ;
-    "tuck"      [ dup rot rot ] ;
-    "2dup"      [ over over ] ;
-    "[]"        [ [ ] ] ;
-    "split"     [ dup rest swap pop ] ;
-    "cond"      [ ? do ] ;inline
-    "if"        [ [] ? do ] ;inline
-    "unless"    [ [] swap ? do ] ;inline
-    "!=="       [ === not ] ;
-    "!="        [ = not ] ;
-    "mod"       [ tuck tuck rem swap + swap rem ] ;
-    "<="        [ > not ] ;
-    ">="        [ < not ] ;
-    "=>"        [ [ return ] unless ] ;inline
-    "match"     [ [ dup ] swap concat [ drop return ] concat do ] ;inline
-    `)
+    interpret(stdlib)
 
     return { stack, interpret, dump }
 }

@@ -1,0 +1,19 @@
+"-rot"      [ rot rot ] ;
+"over"      [ swap dup rot rot ] ;
+"nip"       [ swap drop ] ;
+"tuck"      [ dup rot rot ] ;
+"2dup"      [ over over ] ;
+"[]"        [ [ ] ] ;
+"split"     [ dup rest swap pop ] ;
+"cond"      [ ? do ] ;inline
+"if"        [ [] ? do ] ;inline
+"unless"    [ [] swap ? do ] ;inline
+"!=="       [ === not ] ;
+"!="        [ = not ] ;
+"mod"       [ tuck tuck rem swap + swap rem ] ;
+"<="        [ > not ] ;
+">="        [ < not ] ;
+"=>"        [ [ return ] unless ] ;inline
+"(match)"   [ [ dup ] swap concat [ return ] concat do ] ;inline
+"match"     [ [ (match) ] in do drop ] ;inline
+"(match)" hide
